@@ -1,13 +1,16 @@
 // const web3 = require("web3");
 App = {
   loading: false,
+
   contracts: {},
+
   load: async () => {
     await App.loadWeb3();
     await App.loadAccount();
     await App.loadContract();
     await App.render();
   },
+
   loadWeb3: async () => {
     // Modern dapp browsers...
     if (typeof web3 !== "undefined") {
@@ -28,6 +31,7 @@ App = {
         });
       } catch (error) {
         // User denied account access...
+        console.log(error);
       }
     }
     // Legacy dapp browsers...
@@ -48,7 +52,7 @@ App = {
   },
 
   loadAccount: async () => {
-    App.account = await ethereum.request({ method: "eth_accounts" }); //web3.eth.accounts[0];
+    App.account = web3.eth.accounts[0];
   },
 
   loadContract: async () => {
@@ -58,6 +62,7 @@ App = {
 
     App.todoList = await App.contracts.TodoList.deployed();
   },
+
   render: async () => {
     //Prevent double render
     if (App.loading) {
@@ -77,6 +82,7 @@ App = {
     //Update app loading state
     App.setLoading(false);
   },
+
   renderTasks: async () => {
     //Load the total task count from the blockchain
     const taskCount = await App.todoList.taskCount();
@@ -95,16 +101,34 @@ App = {
       $newTaskTemplate
         .find("input")
         .prop("name", taskId)
-        .prop("checked", taskCompleted);
-      //.on("click", App.toggleCompleted);
+        .prop("checked", taskCompleted)
+        .on("click", App.toggleCompleted);
 
       if (taskCompleted) {
         $("#completedTaskList").append($newTaskTemplate);
       } else {
         $("#taskList").append($newTaskTemplate);
       }
+
+      $newTaskTemplate.show();
     }
   },
+
+  createTask: async () => {
+    debugger;
+    App.setLoading(true);
+    const content = $("#newTask").val();
+    await App.todoList.createTask(content);
+    window.location.reload();
+  },
+
+  toggleCompleted: async (e) => {
+    App.setLoading(true);
+    const taskId = e.target.name;
+    await App.todoList.toggleCompleted(taskId);
+    window.location.reload();
+  },
+
   setLoading: (boolean) => {
     App.loading = boolean;
     const loader = $("#loader");
@@ -118,6 +142,7 @@ App = {
     }
   },
 };
+
 $(() => {
   $(window).load(() => {
     App.load();
